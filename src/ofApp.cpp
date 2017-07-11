@@ -231,11 +231,11 @@ void ofApp::setupGui() {
 	settingsGroup.add(loadSettingsFileIndex.set("Settings file", 1, 1, loadSettingsFileNumber));
 	loadSettingsFileIndex.addListener(this, &ofApp::setLoadSettingsName);
 
-	settingsGroup.add(transitionMode.set("Transition mode", TRANSITION_NONE, TRANSITION_NONE, TRANSITION_COUNT - 1));
-	settingsGroup.add(transitionTime.set("Transition time", 0, 0, 720));
-	settingsGroup.add(doJumpBetweenStates.set("Jump between states", false));
+	settingsGroup.add(transitionMode.set("Transition mode", TRANSITION_LINEAR, TRANSITION_NONE, TRANSITION_COUNT - 1));
+	settingsGroup.add(transitionTime.set("Transition time", 10, 0, 720));
+	settingsGroup.add(doJumpBetweenStates.set("Jump between states", true));
 	doJumpBetweenStates.addListener(this, &ofApp::startJumpBetweenStates);
-	settingsGroup.add(jumpBetweenStatesInterval.set("Jump between interval", 0, 0, 720));
+	settingsGroup.add(jumpBetweenStatesInterval.set("Jump between interval", 30, 0, 720));
     
 	gui.add(settingsGroup);
 
@@ -395,7 +395,7 @@ void ofApp::sourceChanged(int& mode) {
 		break;
 	case SOURCE_PS3EYE:		
 		relateiveDataPath = relateivePsEyeDataPath;
-		ofLogWarning("Switched to PsEye");
+		ofLogWarning("Switched to PsEye: " + relateiveDataPath);
 		break;
 	}
 	updateNumberOfSettingFiles();
@@ -415,7 +415,6 @@ bool ofApp::isVideoSource() {
 
 //--------------------------------------------------------------
 void ofApp::update() {
-
 	deltaTime = ofGetElapsedTimef() - lastTime;
 	lastTime = ofGetElapsedTimef();
 	simpleCam.update();
@@ -877,11 +876,20 @@ void ofApp::setMousePosition(float x, float y) {
 }
 
 void ofApp::startTransition(string settings1Path, string settings2Path) {
+    ofLogNotice("Starting transition from " + settings1Path + " to " + settings2Path);
 	transitionStartTime = ofGetElapsedTimef();
-	settingsFrom = new ofxXmlSettings(settings1Path);
+	//settingsFrom = new ofxXmlSettings();
+    settingsFrom.clear();
 	settingsFromPath = settings1Path;
-	settingsTo = new ofxXmlSettings(settings2Path);
+	//settingsTo = new ofxXmlSettings();
+    settingsTo.clear();
 	settingsToPath = settings2Path;
+    if (!settingsFrom.loadFile(settingsFromPath)) {
+        ofLogError("settings") << "failed to load settings file: " + settings1Path;
+    }
+    if (!settingsTo.loadFile(settingsToPath)) {
+        ofLogError("settings") << "failed to load settings file: " + settings1Path;
+    }
 	isTransitionFinished = false;
 }
 
@@ -896,11 +904,12 @@ void ofApp::updateTransition() {
 	if (timeSinceAnimationStart >= transitionTime) {
 		//When animation finish - set the new file as the loaded file
 		isTransitionFinished = true;
+        ofLogNotice() << "Transition done!";
 		loadNextSettingsFile(settingsToPath);
 		return;
 	}
 
-	if (settingsFrom == NULL || !settingsFrom->bDocLoaded)
+	if (!settingsFrom.bDocLoaded)
 		return;
 
 	updateGuiFromTag(timeSinceAnimationStart, "settings:optical_flow:strength", "/1/strength");
@@ -923,7 +932,7 @@ void ofApp::updateTransition() {
 	//The following is more generic but cost loading time and other loaded settings which kills the transition
 	//This could work if we already set all the to parameters on the other settings - this prevents us
 	// from live dj during a transition
-	//gui.loadFrom(*settingsFrom);
+	//gui.loadFrom(settingsFrom);
 }
 
 /*
@@ -1002,24 +1011,24 @@ void ofApp::sendOscMessage(string oscAddress, float value) {
 }
 
 int ofApp::getValueTransitionStep(string tagName, int amount) {
-	int val1 = settingsFrom->getValue(tagName, 0);
-	int val2 = settingsTo->getValue(tagName, 0);
+	int val1 = settingsFrom.getValue(tagName, 0);
+	int val2 = settingsTo.getValue(tagName, 0);
 	return ofLerp(val1, val2, amount);
 }
 
 double ofApp::getValueTransitionStep(string tagName, double amount) {
-	double val1 = settingsFrom->getValue(tagName, 0.0, 0);
-	double val2 = settingsTo->getValue(tagName, 0.0, 0);
+	double val1 = settingsFrom.getValue(tagName, 0.0, 0);
+	double val2 = settingsTo.getValue(tagName, 0.0, 0);
 	return ofLerp(val1, val2, amount);
 }
 
 string ofApp::getValueAsString(string tagName) {
-	return settingsTo->getValue(tagName, "");
+	return settingsTo.getValue(tagName, "");
 }
 
 bool ofApp::getValueTransitionStep(string tagName, bool amount) {
-	bool val1 = settingsFrom->getValue(tagName, 0.0, 0);
-	bool val2 = settingsTo->getValue(tagName, 0.0, 0);
+	bool val1 = settingsFrom.getValue(tagName, 0.0, 0);
+	bool val2 = settingsTo.getValue(tagName, 0.0, 0);
 	return (amount > 0.5) ? val2 : val1;
 }
 
@@ -1034,8 +1043,12 @@ int ofApp::getNextSettingsCounter() {
 }
 
 void ofApp::loadNextSettingsFile(string settingsToPathArg) {
-	ofLogWarning("Loaded a file");
-	gui.loadFromFile(settingsToPathArg);
+	ofLogWarning() << "Loaded a file: " << settingsToPathArg;
+    ofxXmlSettings settings;
+    if (!settings.loadFile(settingsToPathArg)) {
+        ofLogError(__FUNCTION__) << "failed to load settings";
+    }
+	gui.loadFrom(settings);
 }
 
 void ofApp::reset() {
@@ -1667,10 +1680,11 @@ void ofApp::cleanCurrentSettingFile()
 
 void ofApp::setMacRelativePath(const string& filename) {
     relateiveDataPath = dirnameOf(filename) + "/Resources/data/settings/";
+    ofLogNotice() << "data path: " << relateiveDataPath;
     ofLogWarning(ofToString(filename));
     relateiveKinectDataPath = relateiveDataPath;
     ofLogWarning(ofToString(relateiveKinectDataPath));
-    relateivePsEyeDataPath = relateiveDataPath + "/pseyesettings/";
+    relateivePsEyeDataPath = relateiveDataPath + "pseyesettings/";
 }
     
 void ofApp::setRelativePath(const char *filename) {

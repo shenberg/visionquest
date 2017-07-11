@@ -1,6 +1,6 @@
 #include "ofMain.h"
 #include "ofApp.h"
-//#define USE_PROGRAMMABLE_GL
+#define USE_PROGRAMMABLE_GL
 //========================================================================
 
 //Disable the following (and choose subsystem Console) to show logging
@@ -54,7 +54,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdline,
 #else
 int main(int argc, char** argv) {
 #endif
-	bool isShouldStartPsCam = false;
+	bool isShouldStartPsCam = true;
 	ofGLFWWindowSettings windowSettings;
 #ifdef USE_PROGRAMMABLE_GL
 	windowSettings.setGLVersion(4, 1);

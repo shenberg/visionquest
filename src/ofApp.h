@@ -280,9 +280,9 @@ public:
 	void				sendOscMessage(string oscAddress, int value);
 	void				sendOscMessage(string oscAddress, float value);
 	float				transitionStartTime;
-	ofxXmlSettings		*settingsFrom;
+	ofxXmlSettings		settingsFrom;
 	string				settingsFromPath;
-	ofxXmlSettings		*settingsTo;
+	ofxXmlSettings		settingsTo;
 	string				settingsToPath;
 	double				getValueTransitionStep(string tagName, double amount);
 	string				getValueAsString(string tagName);
