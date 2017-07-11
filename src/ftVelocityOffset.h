@@ -32,7 +32,7 @@ namespace flowTools {
             
             // TODO: fix size hack
             feedbackBuffer.allocate(_width*16, _height*16);
-            feedbackBuffer.clear();
+            feedbackBuffer.black();
 			
 			
 			parameters.setName("velocity lines");
