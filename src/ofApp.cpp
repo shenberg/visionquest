@@ -90,6 +90,8 @@ void ofApp::setup() {
 	didCamUpdate = false;
 	cameraFbo.allocate(internalWidth, internalHeight);
 	cameraFbo.black();
+    rawCameraFbo.allocate(internalWidth, internalHeight);
+    rawCameraFbo.black();
 
 	globalFbo.allocate(internalWidth, internalHeight);
 
@@ -499,7 +501,18 @@ void ofApp::update() {
 		ofPopStyle();
 		// TODO: figure out how to use kinectFbo for this on kinect and to have it work
 		if ((sourceMode == SOURCE_PS3EYE) && (psEyeRawOpticalFlow.get())) {
-			opticalFlow.setSource(videoTexture);
+            // deal with mirroring in this case too
+            // TODO: hacky way to go about it, do something better
+            rawCameraFbo.begin();
+            if (doFlipCamera)
+                videoTexture.draw(rawCameraFbo.getWidth(), 0, -rawCameraFbo.getWidth(), rawCameraFbo.getHeight());  // Flip Horizontal
+            else
+                videoTexture.draw(0, 0, rawCameraFbo.getWidth(), rawCameraFbo.getHeight());
+            // NOTE: was useful debugging
+            rawCameraFbo.end();
+
+			//opticalFlow.setSource(videoTexture);
+            opticalFlow.setSource(rawCameraFbo.getTexture());
 		}
 		else {
 			opticalFlow.setSource(cameraFbo.getTexture());

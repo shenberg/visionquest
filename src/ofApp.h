@@ -94,6 +94,7 @@ public:
 
 	bool				didCamUpdate;
 	ftFbo				cameraFbo;
+    ftFbo				rawCameraFbo;
 	ofParameter<bool>	doFlipCamera;
 	ofFbo				globalFbo;
 	bool				spoutInitialized;
